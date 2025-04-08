@@ -15,8 +15,8 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: php_docker
-      MYSQL_USER: php_docker
+      MYSQL_DATABASE: taskflow_db
+      MYSQL_USER: root
       MYSQL_PASSWORD: password
     ports:
       - "3306:3306"

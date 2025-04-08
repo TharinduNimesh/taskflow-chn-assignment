@@ -4,9 +4,9 @@ class Database {
     private static $instance = null;
     private $connection;
 
-    private $host = 'db';
-    private $database = 'php_docker';
-    private $username = 'php_docker';
+    private $host = 'localhost';
+    private $database = 'taskflow_db';
+    private $username = 'root';
     private $password = 'password';
 
     private function __construct() {

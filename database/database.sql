@@ -1,3 +1,7 @@
+CREATE DATABASE IF NOT EXISTS `task_management`;
+
+USE `task_management`;
+
 -- Tasks table to store task information
 CREATE TABLE tasks (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
