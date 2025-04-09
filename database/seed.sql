@@ -1,6 +1,11 @@
-USE `taskflow_db`;
+USE `task_management`;
 
--- First, insert tags
+-- Insert sample users (passwords should be hashed in production)
+INSERT INTO users (name, username, email, password) VALUES 
+('John Doe', 'johndoe', 'john@example.com', 'hashed_password_1'),
+('Jane Smith', 'janesmith', 'jane@example.com', 'hashed_password_2');
+
+-- Insert tags
 INSERT INTO tags (name) VALUES 
 ('frontend'),
 ('backend'),
@@ -13,10 +18,18 @@ INSERT INTO tags (name) VALUES
 ('database'),
 ('api');
 
+-- Reset auto-increment for tasks table to ensure consistent IDs
+ALTER TABLE tasks AUTO_INCREMENT = 1;
+
+-- Insert sample tasks with user_id
+INSERT INTO tasks (user_id, title, description, category, priority, status) VALUES
+(1, 'Implement User Authentication', 'Implement secure user authentication system', 'development', 'high', 'pending'),
+(1, 'Create API Documentation', 'Document all API endpoints', 'planning', 'medium', 'pending'),
+(2, 'Fix Login Bug', 'Address login issues reported by users', 'testing', 'high', 'in_progress');
+
 -- Insert 10 detailed tasks
-INSERT INTO tasks (title, description, category, priority, status) VALUES
-(
-    'Implement OAuth2 Authentication System',
+INSERT INTO tasks (user_id, title, description, category, priority, status) VALUES
+(1, 'Implement OAuth2 Authentication System',
     '<h3>Authentication System Implementation</h3>
     <ul>
         <li>Implement OAuth2 flow with multiple providers (Google, GitHub, Facebook)</li>
@@ -30,8 +43,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'high',
     'in_progress'
 ),
-(
-    'Database Performance Optimization',
+(1, 'Database Performance Optimization',
     '<h3>Database Optimization Tasks</h3>
     <ul>
         <li>Analyze slow query logs and identify bottlenecks</li>
@@ -45,8 +57,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'high',
     'pending'
 ),
-(
-    'REST API Documentation Update',
+(2, 'REST API Documentation Update',
     '<h3>API Documentation Requirements</h3>
     <ul>
         <li>Document all API endpoints using OpenAPI 3.0 specification</li>
@@ -60,8 +71,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'medium',
     'pending'
 ),
-(
-    'E-commerce Cart Microservice',
+(2, 'E-commerce Cart Microservice',
     '<h3>Shopping Cart Microservice Development</h3>
     <ul>
         <li>Design cart data model and API endpoints</li>
@@ -75,8 +85,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'high',
     'pending'
 ),
-(
-    'Mobile Responsive Design Implementation',
+(1, 'Mobile Responsive Design Implementation',
     '<h3>Responsive Design Tasks</h3>
     <ul>
         <li>Implement mobile-first approach for main layout</li>
@@ -90,8 +99,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'medium',
     'pending'
 ),
-(
-    'Payment Gateway Integration',
+(2, 'Payment Gateway Integration',
     '<h3>Payment System Implementation</h3>
     <ul>
         <li>Integrate Stripe and PayPal payment gateways</li>
@@ -105,8 +113,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'high',
     'pending'
 ),
-(
-    'Automated Testing Suite Setup',
+(1, 'Automated Testing Suite Setup',
     '<h3>Testing Infrastructure Setup</h3>
     <ul>
         <li>Set up Jest for unit testing</li>
@@ -120,8 +127,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'high',
     'pending'
 ),
-(
-    'Real-time Chat Feature Implementation',
+(2, 'Real-time Chat Feature Implementation',
     '<h3>Chat System Requirements</h3>
     <ul>
         <li>Implement WebSocket connection handling</li>
@@ -135,8 +141,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'medium',
     'pending'
 ),
-(
-    'Security Audit Implementation',
+(1, 'Security Audit Implementation',
     '<h3>Security Updates Required</h3>
     <ul>
         <li>Implement CSRF protection</li>
@@ -150,8 +155,7 @@ INSERT INTO tasks (title, description, category, priority, status) VALUES
     'high',
     'pending'
 ),
-(
-    'Analytics Dashboard Development',
+(2, 'Analytics Dashboard Development',
     '<h3>Dashboard Features</h3>
     <ul>
         <li>Create real-time data visualization components</li>
@@ -181,3 +185,7 @@ WHERE
     (t.title = 'Real-time Chat Feature Implementation' AND tg.name IN ('feature', 'backend')) OR
     (t.title = 'Security Audit Implementation' AND tg.name IN ('security')) OR
     (t.title = 'Analytics Dashboard Development' AND tg.name IN ('frontend', 'feature'));
+
+-- Link sample tasks with tags
+INSERT INTO task_tags (task_id, tag_id)
+SELECT 1, id FROM tags WHERE name IN ('backend', 'security');

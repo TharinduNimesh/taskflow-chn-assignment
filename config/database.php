@@ -4,10 +4,10 @@ class Database {
     private static $instance = null;
     private $connection;
 
-    private $host = 'localhost';
+    private $host = 'db';
     private $database = 'taskflow_db';
     private $username = 'root';
-    private $password = 'password';
+    private $password = 'rootpassword';
 
     private function __construct() {
         $this->connection = mysqli_connect(

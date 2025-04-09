@@ -1,30 +1,30 @@
 <?php
+session_start();
 require_once(__DIR__ . '/config/database.php');
+require_once(__DIR__ . '/models/Task.php');
+
+// Redirect to login if not authenticated
+if (!isset($_SESSION['user'])) {
+    header('Location: /signin.php');
+    exit;
+}
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $db = Database::getInstance();
-        $conn = $db->getConnection();
-
-        // Validate and sanitize inputs
-        $title = mysqli_real_escape_string($conn, $_POST['title']);
-        $description = mysqli_real_escape_string($conn, $_POST['description']);
-        $category = mysqli_real_escape_string($conn, $_POST['category']);
-        $priority = mysqli_real_escape_string($conn, $_POST['priority']);
-
-        // Insert task
-        $query = "INSERT INTO tasks (title, description, category, priority) VALUES (?, ?, ?, ?)";
-        $stmt = mysqli_prepare($conn, $query);
-        mysqli_stmt_bind_param($stmt, 'ssss', $title, $description, $category, $priority);
-        
-        if (!mysqli_stmt_execute($stmt)) {
-            throw new Exception("Error creating task: " . mysqli_error($conn));
-        }
-
-        $taskId = mysqli_insert_id($conn);
+        $taskModel = new Task();
+        $taskId = $taskModel->createTask(
+            $_POST['title'],
+            $_POST['description'],
+            $_POST['category'],
+            $_POST['priority'],
+            $_SESSION['user']['id']
+        );
 
         // Handle tags
+        $db = Database::getInstance();
+        $conn = $db->getConnection();
+        
         if (!empty($_POST['tags'])) {
             $tags = explode(',', $_POST['tags']);
             
@@ -79,7 +79,7 @@ $content = <<<HTML
             </div>
 
             <!-- Task Form -->
-            <form action="/create-task.php" method="POST" class="space-y-6">
+            <form action="/create-task.php" method="POST" class="space-y-6" id="createTaskForm">
                 <!-- Title Input -->
                 <div class="space-y-2">
                     <label for="title" class="block text-sm font-medium text-gray-300">Task Title</label>
@@ -91,11 +91,11 @@ $content = <<<HTML
                 <!-- Description Input -->
                 <div class="space-y-2">
                     <label for="description" class="block text-sm font-medium text-gray-300">Description</label>
-                    <textarea id="description" name="description" rows="8" required
+                    <textarea id="description" name="description" rows="8"
                         class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500/20 text-gray-300 placeholder-gray-500"
                         placeholder="Enter task description"></textarea>
-                    <script src="/assets/js/form-controls.js"></script>
                     <script>
+                        // Initialize TinyMCE
                         tinymce.init({
                             selector: '#description',
                             plugins: 'lists link image code table',
@@ -105,7 +105,20 @@ $content = <<<HTML
                             height: 300,
                             menubar: false,
                             branding: false,
-                            promotion: false
+                            promotion: false,
+                            setup: function(editor) {
+                                // Add required validation after TinyMCE is initialized
+                                editor.on('init', function() {
+                                    const form = document.getElementById('createTaskForm');
+                                    form.addEventListener('submit', function(e) {
+                                        const content = editor.getContent();
+                                        if (!content) {
+                                            e.preventDefault();
+                                            alert('Description is required');
+                                        }
+                                    });
+                                });
+                            }
                         });
                     </script>
                 </div>
@@ -113,9 +126,9 @@ $content = <<<HTML
                 <!-- Category Selection -->
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-300">Category</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="categoryContainer">
                         <label class="relative flex cursor-pointer items-center justify-center rounded-xl border border-gray-700/50 bg-gray-800/50 p-4 hover:border-violet-500/20 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-200">
-                            <input type="radio" name="category" value="planning" class="absolute h-0 w-0 opacity-0">
+                            <input type="radio" name="category" value="planning" class="absolute h-0 w-0 opacity-0" required>
                             <div class="flex flex-col items-center space-y-2">
                                 <div class="rounded-full bg-gradient-to-br from-blue-500/20 to-violet-600/20 p-2">
                                     <svg class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -211,7 +224,7 @@ $content = <<<HTML
                 <!-- Priority Selection -->
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-300">Priority</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="priorityContainer">
                         <label class="relative flex cursor-pointer items-center justify-center rounded-xl border border-gray-700/50 bg-gray-800/50 p-4 hover:border-green-500/20 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-200">
                             <input type="radio" name="priority" value="low" class="absolute h-0 w-0 opacity-0" required>
                             <div class="flex items-center space-x-3">
@@ -235,6 +248,36 @@ $content = <<<HTML
                         </label>
                     </div>
                 </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Function to handle selection styling
+                        function handleSelection(container, colorClass) {
+                            const labels = container.querySelectorAll('label');
+                            const inputs = container.querySelectorAll('input[type="radio"]');
+                            
+                            inputs.forEach((input, index) => {
+                                input.addEventListener('change', () => {
+                                    // Remove selection styling from all labels
+                                    labels.forEach(label => {
+                                        label.classList.remove('ring-2');
+                                        label.classList.remove(colorClass);
+                                    });
+                                    
+                                    // Add selection styling to selected label
+                                    if (input.checked) {
+                                        labels[index].classList.add('ring-2');
+                                        labels[index].classList.add(colorClass);
+                                    }
+                                });
+                            });
+                        }
+
+                        // Initialize selection handlers
+                        handleSelection(document.getElementById('categoryContainer'), 'ring-violet-500/50');
+                        handleSelection(document.getElementById('priorityContainer'), 'ring-violet-500/50');
+                    });
+                </script>
 
                 <!-- Submit Button -->
                 <div class="flex justify-end gap-4">

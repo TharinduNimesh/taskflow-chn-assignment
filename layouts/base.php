@@ -22,7 +22,9 @@
         }
     </script>
     <title><?php echo $pageTitle ?? 'Note'; ?></title>
+    <?php if (isset($includeFilterJS) && $includeFilterJS): ?>
     <script src="/assets/js/filter.js" defer></script>
+    <?php endif; ?>
     <script src="https://cdn.tiny.cloud/1/95xr7v31l63ip4euwlcfvn8fszp3duwbqsm1wdrt8d8i0p88/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body class="dark:bg-gray-900 min-h-screen flex flex-col justify-between">

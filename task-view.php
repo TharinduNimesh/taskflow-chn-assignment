@@ -1,11 +1,18 @@
 <?php
+session_start();
 require_once(__DIR__ . '/models/Task.php');
+
+// Redirect to login if not authenticated
+if (!isset($_SESSION['user'])) {
+    header('Location: /signin.php');
+    exit;
+}
 
 $taskId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 try {
     $taskModel = new Task();
-    $task = $taskModel->getTaskById($taskId);
+    $task = $taskModel->getTaskById($taskId, $_SESSION['user']['id']);
     
     if (!$task) {
         header('Location: /');
@@ -67,11 +74,10 @@ ob_start();
                     <div class="space-y-6 text-gray-300">
                         <div class="prose prose-invert max-w-none">
                         <?php 
-                        // Display the task description as compiled HTML
-                        // More aggressive normalization of whitespace in the HTML before displaying
-                        $description = preg_replace('/(\r\n|\r|\n|\s)+/', ' ', $task['description']);
-                        // Also replace any literal "\r" or "\n" strings that might be in the text
-                        $description = str_replace(['\r', '\n', '\\r', '\\n'], ' ', $description);
+                        // Decode stored HTML content and convert line breaks
+                        $description = html_entity_decode($task['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        // Replace literal \r\n with actual line breaks before displaying
+                        $description = str_replace('\r\n', "\n", $description);
                         echo $description;
                         ?>
                         </div>

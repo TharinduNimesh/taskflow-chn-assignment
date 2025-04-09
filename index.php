@@ -1,15 +1,23 @@
 <?php
+session_start();
 require_once(__DIR__ . '/models/Task.php');
+
+// Redirect to login if not authenticated
+if (!isset($_SESSION['user'])) {
+    header('Location: /signin.php');
+    exit;
+}
 
 try {
     $taskModel = new Task();
-    $tasks = $taskModel->getAllTasks();
+    $tasks = $taskModel->getAllTasks($_SESSION['user']['id']);
 } catch (Exception $e) {
     error_log($e->getMessage());
     $tasks = [];
 }
 
-$pageTitle = 'Home - Note App';
+$pageTitle = 'Dashboard - TaskFlow';
+$includeFilterJS = true; // Add this line to include filter.js
 
 // Start building the HTML content
 ob_start();
